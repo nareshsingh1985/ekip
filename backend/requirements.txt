@@ -1,0 +1,103 @@
+# Fast API
+fastapi
+uvicorn[standard]
+
+# Environment variables
+python-dotenv
+pydantic-settings
+
+# Langchain Core
+langchain
+langchain-core
+langchain-community
+
+# OpenAI
+langchain-openai
+openai
+
+#Langchain
+langchain
+langchain-community
+langchain-openai
+langchain-google-genai
+langchain-anthropic
+
+# Anthropic
+langchain-anthropic
+anthropic
+
+# Google Gemini
+langchain-google-genai
+google-generativeai
+
+# LlamaIndex
+llama-index
+
+# Vector Databases
+qdrant-client
+
+# Embeddings
+sentence-transformers
+
+# Document Processing
+pypdf
+pdfplumber
+python-docx
+openpyxl
+pandas
+tabulate
+
+# JSON Processing
+orjson
+
+# Tokenization
+tiktoken
+
+# Environment Variables
+python-dotenv
+
+# API Communication
+httpx
+requests
+
+# AI Utilities
+numpy
+scikit-learn
+
+# Knowledge Graphs
+networkx
+pyvis
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# File Uploads
+python-multipart
+
+# API Requests
+httpx
+
+# Validation
+pydantic
+
+# Logging
+loguru
+
+# Testing
+pytest
+
+# Optional OCR
+pytesseract
+pillow
+
+# Utilities
+tqdm
+numpy
+
+# Knowledge Graph
+networkx
+pyvis
+
+# Frontend Integration
+python-multipart

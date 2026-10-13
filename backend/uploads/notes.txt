@@ -1,0 +1,36 @@
+# Project Phoenix Meeting notes
+
+**Date:** October 11, 2026  
+**Time:** 10:00 AM – 11:00 AM  
+**Attendees:** John Smith, Sarah Johnson, Michael Brown, Emily Davis
+
+## Meeting Summary
+- Reviewed the overall progress of Project Phoenix.
+- Discussed frontend development and backend API integration.
+- Reviewed the current project timeline and upcoming milestones.
+- Identified performance optimization opportunities.
+- Discussed testing plans and deployment readiness.
+
+## Decisions
+- The team will use React.js for frontend development.
+- API integration will be completed before the next sprint review.
+- All new features must pass code review and testing.
+- The development team will follow the agreed coding standards.
+
+## Action Items
+- Complete dashboard UI — Owner: John Smith — Due date: October 15, 2026
+- Finalize API integration — Owner: Sarah Johnson — Due date: October 17, 2026
+- Perform performance testing — Owner: Michael Brown — Due date: October 19, 2026
+- Prepare sprint review presentation — Owner: Emily Davis — Due date: October 20, 2026
+
+## Risks and Issues
+- API dependencies may delay integration.
+- Additional testing may be required for older browsers.
+- The team needs confirmation of the final deployment environment.
+
+## Next Meeting
+- **Date:** October 18, 2026
+- **Time:** 10:00 AM
+- **Agenda:** Review sprint progress, resolve blockers, and confirm deployment readiness.
+
+**Note:** This is fictional sample data created for demonstration and testing purposes.
