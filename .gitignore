@@ -24,6 +24,9 @@ coverage/
 # Local environment files
 .env
 .env.*
+!.env.example
+!backend/.env.example
+!frontend/vite-project/.env.example
 *.local
 
 # OS/editor

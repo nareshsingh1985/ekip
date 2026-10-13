@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.chat import router as chat_router
 from app.api.health import router as health_router
+from app.config import settings
 
 from app.api.upload import(
     router as upload_router
@@ -47,14 +48,24 @@ app = FastAPI(
     version="1.0.0",
 )
 
+allowed_origins = [
+    origin.strip()
+    for origin in settings.CORS_ORIGINS.split(",")
+    if origin.strip()
+]
+allowed_origins.extend([
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://0.0.0.0:5173",
+    "http://[::1]:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://0.0.0.0:5173",
-        "http://[::1]:5173",
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\\.(vercel|netlify|github)\\.(app|dev)|http://localhost:\\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
