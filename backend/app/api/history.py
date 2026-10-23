@@ -1,14 +1,9 @@
-import json
-
 from fastapi import APIRouter
+
+from app.storage import load_upload_metadata
 
 router = APIRouter()
 
-METADATA_FILE = "uploads_metadata.json"
-
 @router.get("/uploads/history")
 def upload_history():
-    with open(METADATA_FILE, "r") as f:
-        data = json.load(f)
-
-    return data
+    return load_upload_metadata()

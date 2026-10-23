@@ -6,61 +6,21 @@ from app.services.entity_extraction_service import (
 
 
 def build_graph():
-
     graph = nx.Graph()
-
     entities = extract_entities()
 
-    for project in entities["projects"]:
+    for group in ("projects", "risks", "actions", "teams", "applications"):
+        for entity in entities.get(group, []):
+            graph.add_node(entity, group=group[:-1] if group.endswith("s") else group)
 
-        graph.add_node(
-            project,
-            group="project"
-        )
-
-    for risk in entities["risks"]:
-
-        graph.add_node(
-            risk,
-            group="risk"
-        )
-
-    for action in entities["actions"]:
-
-        graph.add_node(
-            action,
-            group="action"
-        )
-
-    for team in entities["teams"]:
-
-        graph.add_node(
-            team,
-            group="team"
-        )
-
-    projects = entities["projects"]
-
-    risks = entities["risks"]
-
-    actions = entities["actions"]
-
-    for project in projects:
-
-        for risk in risks:
-
+    for relationship in entities.get("relationships", []):
+        source = relationship["source"]
+        target = relationship["target"]
+        if source in graph and target in graph:
             graph.add_edge(
-                project,
-                risk
-            )
-
-    for risk in risks:
-
-        for action in actions:
-
-            graph.add_edge(
-                risk,
-                action
+                source,
+                target,
+                relation=relationship.get("relation", "related to"),
             )
 
     return graph

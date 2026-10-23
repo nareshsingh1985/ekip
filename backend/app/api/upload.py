@@ -1,62 +1,67 @@
-import json
+import logging
+from datetime import datetime, timezone
 from pathlib import Path
-from datetime import datetime
+from uuid import uuid4
 
-from fastapi import APIRouter
-from fastapi import File
-from fastapi import UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from app.services.ingest_service import ingest_document
+from app.storage import UPLOAD_DIR, load_upload_metadata, save_upload_metadata
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-UPLOAD_DIR = "uploads"
-METADATA_FILE = "uploads_metadata.json"
-
-Path(UPLOAD_DIR).mkdir(exist_ok=True)
-
-if not Path(METADATA_FILE).exists():
-    with open(METADATA_FILE, "W") as f:
-        json.dump([], f)
+SUPPORTED_FILE_TYPES = {".pdf", ".docx", ".txt", ".csv", ".xls", ".xlsx", ".json"}
 
 @router.post("/upload")
-async def upload_file(
-    file: UploadFile = File(...)
-):
+async def upload_file(file: UploadFile = File(...)):
+    original_filename = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    if not original_filename:
+        raise HTTPException(status_code=400, detail="A filename is required.")
 
-    file_path = (
-        f"{UPLOAD_DIR}/{file.filename}"
-    )
+    file_type = Path(original_filename).suffix.lower()
+    if file_type not in SUPPORTED_FILE_TYPES:
+        supported_types = ", ".join(sorted(SUPPORTED_FILE_TYPES))
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported file type. Supported types: {supported_types}.",
+        )
 
-    contents = await file.read()
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file_path = UPLOAD_DIR / f"{uuid4().hex}{file_type}"
+    byte_count = 0
 
-    with open(
-        file_path,
-        "wb"
-    ) as f:
-        f.write(contents)
+    try:
+        with file_path.open("wb") as destination:
+            while chunk := await file.read(1024 * 1024):
+                destination.write(chunk)
+                byte_count += len(chunk)
 
-    ingest_document(file_path)
+        if byte_count == 0:
+            file_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="The uploaded file is empty.")
 
-    with open(METADATA_FILE, "r") as f:
-        metadata = json.load(f)
+        await run_in_threadpool(ingest_document, str(file_path))
+        metadata = load_upload_metadata()
+        metadata.append(
+            {
+                "filename": original_filename,
+                "uploaded_at": datetime.now(timezone.utc).isoformat(),
+                "file_type": file_type,
+            }
+        )
+        save_upload_metadata(metadata)
+    except HTTPException:
+        raise
+    except Exception as error:
+        file_path.unlink(missing_ok=True)
+        logger.exception("Failed to store or process uploaded file %s", original_filename)
+        raise HTTPException(
+            status_code=500,
+            detail="The uploaded file could not be processed. Please try again.",
+        ) from error
+    finally:
+        await file.close()
 
-    metadata.append(
-        {
-            "filename": file.filename,
-            "uploaded at": datetime.now().strftime(
-                "%Y-%m-%d- % H:%M:%S"
-            ),
-            "file_type": Path(
-                file.filename
-            ).suffix
-        }
-    )
-
-    with open(METADATA_FILE, "w") as f:
-        json.dump(metadata, f, indent=2)
-
-    return{
-        "status": "success",
-        "filename": file.filename
-    }
+    return {"status": "success", "filename": original_filename}

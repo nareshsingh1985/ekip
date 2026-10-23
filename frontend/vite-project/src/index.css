@@ -12,6 +12,14 @@
   box-sizing: border-box;
 }
 
+.css-rktvvf-MuiPaper-root,
+.css-1i3tsf3-MuiTypography-root,
+.css-mpaqru-MuiTypography-root,
+.css-38rnu9-MuiTypography-root,
+{
+  color: #111111 !important;
+}
+
 html,
 body,
 #root {

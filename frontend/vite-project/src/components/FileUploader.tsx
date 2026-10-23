@@ -1,8 +1,9 @@
 import {useState} from 'react';
 
 import { Alert, Button, Paper, Typography } from "@mui/material";
+import axios from "axios";
 
-import { uploadFile } from "../api/uploadApi";
+import { uploadFile, SUPPORTED_UPLOAD_EXTENSIONS } from "../api/uploadApi";
 
 export default function FileUploader() {
     const [message, setMessage] = useState("");
@@ -18,14 +19,28 @@ export default function FileUploader() {
             return;
         }
 
+        const extensionIndex = file.name.lastIndexOf(".");
+        const extension = extensionIndex >= 0
+            ? file.name.slice(extensionIndex).toLowerCase()
+            : "";
+        if (!SUPPORTED_UPLOAD_EXTENSIONS.includes(extension)) {
+            setMessage("");
+            setError(`Unsupported file type. Please select ${SUPPORTED_UPLOAD_EXTENSIONS.join(", ")}.`);
+            event.target.value = "";
+            return;
+        }
+
         setError(null);
         setMessage("");
         setUploading(true);
         try {
             const result = await uploadFile(file);
             setMessage(`Uploaded successfully: ${result.filename}`);
-        } catch {
-            setError("File upload failed. Please try again.");
+        } catch (uploadError: unknown) {
+            const serverMessage = axios.isAxiosError<{ detail?: string }>(uploadError)
+                ? uploadError.response?.data?.detail
+                : undefined;
+            setError(serverMessage ?? "File upload failed. Please try again.");
         } finally {
             setUploading(false);
             event.target.value = "";
@@ -42,6 +57,7 @@ export default function FileUploader() {
                     hidden
                     type="file"
                     onChange={handleUpload}
+                    accept={SUPPORTED_UPLOAD_EXTENSIONS.join(",")}
                     aria-label="Select a document to upload"
                 />
             </Button>

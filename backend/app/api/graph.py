@@ -31,14 +31,15 @@ def graph():
             }
         )
 
-    for source, target in (
-        knowledge_graph.edges()
+    for source, target, edge_data in (
+        knowledge_graph.edges(data=True)
     ):
 
         links.append(
             {
                 "source": source,
                 "target": target,
+                "label": edge_data.get("relation", "related to"),
             }
         )
 

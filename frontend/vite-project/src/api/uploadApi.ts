@@ -5,12 +5,22 @@ export interface UploadResponse {
     filename: string;
 }
 
+export const SUPPORTED_UPLOAD_EXTENSIONS = [
+    ".pdf",
+    ".docx",
+    ".txt",
+    ".csv",
+    ".xls",
+    ".xlsx",
+    ".json",
+];
+
 export const uploadFile = async (
     file: File
 ): Promise<UploadResponse> => {
     const formData = new FormData();
 
     formData.append("file", file);
-    const response = await api.post("/upload", formData);
+    const response = await api.post<UploadResponse>("/upload", formData);
     return response.data;
 };

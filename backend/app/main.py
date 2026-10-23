@@ -54,6 +54,10 @@ allowed_origins = [
     if origin.strip()
 ]
 allowed_origins.extend([
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+    "http://0.0.0.0:4173",
+    "http://[::1]:4173",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://0.0.0.0:5173",
@@ -65,7 +69,7 @@ allowed_origins.extend([
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\\.(vercel|netlify|github)\\.(app|dev)|http://localhost:\\d+",
+    allow_origin_regex=r"https://.*\.(vercel|netlify|github)\.(app|dev)|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
