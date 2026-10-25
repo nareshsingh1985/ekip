@@ -68,9 +68,6 @@ def test_build_graph_adds_only_explicit_relationships(monkeypatch):
 
 
 def test_entity_extraction_parses_and_normalizes_json(monkeypatch):
-    class SearchResult:
-        payload = {"text": "Project A has delivery risk Risk A."}
-
     class LLMResponse:
         content = """```json
         {"projects": [" Project A ", "Project A"], "risks": ["Risk A"],
@@ -85,8 +82,8 @@ def test_entity_extraction_parses_and_normalizes_json(monkeypatch):
 
     monkeypatch.setattr(
         entity_extraction_service,
-        "search_documents",
-        lambda query, limit: [SearchResult()],
+        "_get_document_context",
+        lambda: "Project A has delivery risk Risk A.",
     )
     monkeypatch.setattr(entity_extraction_service.settings, "OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(entity_extraction_service, "get_llm", FakeLLM)
@@ -104,17 +101,8 @@ def test_entity_extraction_parses_and_normalizes_json(monkeypatch):
     ]
 
 
-def test_entity_extraction_reports_missing_documents(monkeypatch):
-    monkeypatch.setattr(
-        entity_extraction_service,
-        "search_documents",
-        lambda query, limit: [],
-    )
-    monkeypatch.setattr(
-        entity_extraction_service,
-        "get_llm",
-        lambda: pytest.fail("The LLM must not run without indexed documents"),
-    )
+def test_entity_extraction_reports_missing_documents(monkeypatch, tmp_path):
+    monkeypatch.setattr(entity_extraction_service, "UPLOAD_DIR", tmp_path)
 
     with pytest.raises(HTTPException) as error:
         entity_extraction_service.extract_entities()
@@ -122,10 +110,18 @@ def test_entity_extraction_reports_missing_documents(monkeypatch):
     assert error.value.status_code == 404
 
 
-def test_entity_extraction_reports_invalid_model_output(monkeypatch):
-    class SearchResult:
-        payload = {"text": "Project A has delivery risk Risk A."}
+def test_graph_context_reads_uploaded_files_without_vector_search(monkeypatch, tmp_path):
+    uploaded_file = tmp_path / "project-notes.txt"
+    uploaded_file.write_text("Project Atlas is delayed by a supplier risk.", encoding="utf-8")
+    monkeypatch.setattr(entity_extraction_service, "UPLOAD_DIR", tmp_path)
 
+    context = entity_extraction_service._get_document_context()
+
+    assert "Document: project-notes.txt" in context
+    assert "Project Atlas is delayed by a supplier risk." in context
+
+
+def test_entity_extraction_reports_invalid_model_output(monkeypatch):
     class LLMResponse:
         content = "This is not JSON"
 
@@ -135,8 +131,8 @@ def test_entity_extraction_reports_invalid_model_output(monkeypatch):
 
     monkeypatch.setattr(
         entity_extraction_service,
-        "search_documents",
-        lambda query, limit: [SearchResult()],
+        "_get_document_context",
+        lambda: "Project A has delivery risk Risk A.",
     )
     monkeypatch.setattr(entity_extraction_service.settings, "OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(entity_extraction_service, "get_llm", FakeLLM)

@@ -1,15 +1,59 @@
 import json
 import logging
 from typing import Any
+from pathlib import Path
 
 from fastapi import HTTPException
 
 from app.config import settings
+from app.ingestion.document_loader import load_document
 from app.llm.openai_client import get_llm
-from app.services.search_service import search_documents
+from app.storage import UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 ENTITY_GROUPS = ("projects", "risks", "actions", "teams", "applications")
+SUPPORTED_FILE_TYPES = {".pdf", ".docx", ".txt", ".csv", ".xls", ".xlsx", ".json"}
+MAX_CONTEXT_CHARACTERS = 30_000
+
+
+def _get_document_context() -> str:
+    if not UPLOAD_DIR.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="No uploaded documents were found. Upload a document before building the knowledge graph.",
+        )
+
+    document_paths = sorted(
+        (
+            path
+            for path in UPLOAD_DIR.iterdir()
+            if path.is_file() and path.suffix.lower() in SUPPORTED_FILE_TYPES
+        ),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    context_parts: list[str] = []
+    remaining_characters = MAX_CONTEXT_CHARACTERS
+
+    for path in document_paths:
+        if remaining_characters <= 0:
+            break
+        text = load_document(str(path)).strip()
+        if not text:
+            continue
+
+        document_context = f"Document: {path.name}\n{text}"
+        clipped_context = document_context[:remaining_characters]
+        context_parts.append(clipped_context)
+        remaining_characters -= len(clipped_context)
+
+    if not context_parts:
+        raise HTTPException(
+            status_code=404,
+            detail="No readable uploaded documents were found. Upload a supported document before building the knowledge graph.",
+        )
+
+    return "\n\n".join(context_parts)
 
 
 def _response_text(content: Any) -> str:
@@ -82,24 +126,7 @@ def _parse_entities(content: str) -> dict[str, Any]:
 
 
 def extract_entities() -> dict[str, Any]:
-    results = search_documents(
-        "projects risks actions teams applications",
-        limit=20,
-    )
-
-    context = [
-        item.payload["text"]
-        for item in results
-        if item.payload
-        and isinstance(item.payload.get("text"), str)
-        and item.payload["text"].strip()
-    ]
-
-    if not context:
-        raise HTTPException(
-            status_code=404,
-            detail="No indexed documents were found. Upload a document before building the knowledge graph.",
-        )
+    context = _get_document_context()
 
     if not settings.OPENAI_API_KEY.strip():
         raise HTTPException(
@@ -123,7 +150,7 @@ Every relationship source and target must exactly match an entity name in one of
 entity lists. Use empty arrays when no supported values exist.
 
 Text:
-{chr(10).join(context)}
+{context}
 """
 
     response = get_llm().invoke(prompt)

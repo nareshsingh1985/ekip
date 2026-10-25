@@ -93,11 +93,11 @@ export default function EnterpriseSearch() {
 
           <Paper
             key={index}
+            className="enterprise-search-result"
             sx={{
               p: 2,
               mb: 2,
-              background:
-                "#fafafa",
+              backgroundColor: "#000",
             }}
           >
 
